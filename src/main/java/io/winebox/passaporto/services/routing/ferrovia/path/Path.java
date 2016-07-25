@@ -1,57 +1,79 @@
 package io.winebox.passaporto.services.routing.ferrovia.path;
 
+import com.graphhopper.GHRequest;
+import com.graphhopper.GHResponse;
+import com.graphhopper.GraphHopper;
+import com.graphhopper.PathWrapper;
+import com.graphhopper.util.Instruction;
+import com.graphhopper.util.Translation;
+import com.graphhopper.util.shapes.GHPoint;
 import io.winebox.passaporto.services.routing.ferrovia.Point;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * Created by AJ on 7/24/16.
  */
+@AllArgsConstructor(access = AccessLevel.PROTECTED) @ToString
 public final class Path {
-    @Getter
-    private final double time;
+    @Getter private final double time;
+    @Getter private final double distance;
+    @Getter private final List<PathEdge> edges;
 
-    @Getter
-    private final double distance;
-
-    @Getter
-    private final List<Leg> legs;
-
-    public static final class Leg {
-        @Getter
-        final double time;
-
-        @Getter
-        final double distance;
-
-        @Getter
-        final List<Point> points;
-
-        @Getter
-        final String text;
-
-        public Leg( double time, double distance, List<Point> points, String text ) {
-            this.time = time;
-            this.distance = distance;
-            this.points = points;
-            this.text = text;
+    public static Path doWork( GraphHopper graphHopper, PathRequest pathRequest ) throws PathException {
+        final List<GHPoint> graphHopperPoints = pathRequest.points().stream().map(Point::toGHPoint).collect(Collectors.toList());
+        final GHRequest request = new GHRequest(graphHopperPoints);
+        if (pathRequest.getEdges()) {
+            request.getHints().put("calcPoints", pathRequest.calculatePoints());
+            request.getHints().put("instructions", true);
+        } else {
+            request.getHints().put("calcPoints", false);
+            request.getHints().put("instructions", false);
         }
 
-        @Override
-        public String toString() {
-            return "time: " + (int)time + " seconds, distance: " + (int)distance + " meters, points: " + points + " text: " + text;
+        final GHResponse response = graphHopper.route(request);
+        if (response.hasErrors()) {
+            throw new PathException(response.getErrors());
         }
-    }
-
-    public Path( double time, double distance, List<Leg> legs ) {
-        this.time = time;
-        this.distance = distance;
-        this.legs = legs;
-    }
-
-    @Override
-    public String toString() {
-        return "time: " + (int)time + " seconds, distance: " + (int)distance + " meters, legs: " + legs;
+        final PathWrapper bestPath = response.getBest();
+        final List<PathEdge> pathEdges;
+        if (pathRequest.getEdges()) {
+            final Translation translation = pathRequest.translateInstructions() ? graphHopper.getTranslationMap().getWithFallBack(new Locale(pathRequest.locale())) : null;
+            pathEdges = new ArrayList();
+            bestPath.getInstructions().forEach((instruction) -> {
+                final double pathEdgeTime = Math.round(instruction.getTime() / 1000.);
+                final double pathEdgeDistance = Math.round(instruction.getDistance());
+                final List<Point> pathEdgePoints;
+                if (pathRequest.calculatePoints()) {
+                    pathEdgePoints = new ArrayList();
+                    instruction.getPoints().forEach((point) -> {
+                        final double latitude = new BigDecimal(point.getLat()).setScale(5, RoundingMode.HALF_UP).doubleValue();
+                        final double longitude = new BigDecimal(point.getLon()).setScale(5, RoundingMode.HALF_UP).doubleValue();
+                        final Point pathEdgePoint = new Point(latitude, longitude);
+                        pathEdgePoints.add(pathEdgePoint);
+                    });
+                } else {
+                    pathEdgePoints = null;
+                }
+                final String pathEdgeText = pathRequest.translateInstructions() ? instruction.getTurnDescription(translation) : null;
+                final PathEdge pathEdge = new PathEdge(pathEdgeTime, pathEdgeDistance, pathEdgePoints, pathEdgeText);
+                pathEdges.add(pathEdge);
+            });
+        } else {
+            pathEdges = null;
+        }
+        final double pathTime = Math.round(bestPath.getTime() / 1000.);
+        final double pathDistance = Math.round(bestPath.getDistance());
+        final Path path = new Path(pathTime, pathDistance, pathEdges);
+        return path;
     }
 }

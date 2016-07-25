@@ -1,65 +1,61 @@
 package io.winebox.passaporto.services.routing.ferrovia.path;
 
 import io.winebox.passaporto.services.routing.ferrovia.Point;
-import lombok.Getter;
+import lombok.*;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Created by AJ on 7/24/16.
  */
+@AllArgsConstructor(access = AccessLevel.PRIVATE) @ToString
 public final class PathRequest {
-    @Getter
-    private List<Point> points;
+    @Getter private Collection<Point> points;
+    @Getter private boolean getEdges;
+    @Getter private boolean calculatePoints;
+    @Getter private boolean translateInstructions;
+    @Getter private String locale;
 
-    @Getter
-    private PathDisplay display = PathDisplay.DEFAULT;
-
-    @Getter
-    private String locale;
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static final class Builder {
-        private List<Point> points;
-        private PathDisplay display = PathDisplay.DEFAULT;
-        private String locale;
+        @Getter(value = AccessLevel.PRIVATE, lazy = true) private final Collection<Point> points = new ArrayList();
+        private boolean getEdges = false;
+        private boolean calculatePoints = false;
+        private boolean translateInstructions = false;
+        private String locale = null;
 
-        public Builder setPoints( List<Point> points ) {
-            this.points = points;
+        public Builder point( @NonNull Point point ) {
+            this.points().add(point);
             return this;
         }
 
-        public Builder setDisplay( PathDisplay display ) {
-            this.display = display;
+        public Builder points( @NonNull Collection<Point> points ) {
+            this.points().addAll(points);
             return this;
         }
 
-        public Builder setLocale( String locale ) {
+        public Builder getEdges( boolean getEdges ) {
+            this.getEdges = getEdges;
+            return this;
+        }
+
+        public Builder calculatePoints( boolean calculatePoints ) {
+            this.calculatePoints = calculatePoints;
+            return this;
+        }
+
+        public Builder translateInstructions( String locale ) {
+            this.translateInstructions = locale != null;
             this.locale = locale;
             return this;
         }
 
         public PathRequest build() {
-            return new PathRequest( points, display, locale );
+            return new PathRequest(this.points(), this.getEdges, this.calculatePoints, this.translateInstructions, this.locale);
         }
-
-        public static Builder newInstance( List<Point> points ) {
-            final Builder builder = new Builder();
-            builder.points = points;
-            return builder;
-        }
-
-        public static Builder newInstance( Point from, Point to ) {
-            final List<Point> points = new ArrayList();
-            points.add(from);
-            points.add(to);
-            return newInstance(points);
-        }
-    }
-
-    private PathRequest(List<Point> points, PathDisplay display, String locale ) {
-        this.points = points;
-        this.display = display;
-        this.locale = locale;
     }
 }
