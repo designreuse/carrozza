@@ -1,19 +1,32 @@
 package io.winebox.passaporto;
 
-import com.graphhopper.util.CmdArgs;
-import io.winebox.passaporto.services.routing.Ferrovia;
+import io.winebox.passaporto.services.routing.ferrovia.Ferrovia;
+import io.winebox.passaporto.services.routing.ferrovia.path.Path;
+import io.winebox.passaporto.services.routing.ferrovia.Point;
+import io.winebox.passaporto.services.routing.ferrovia.path.PathRequest;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by AJ on 7/24/16.
  */
 public final class App {
     public static final void main( String[] args ) {
-        CmdArgs graphHopperArgs = new CmdArgs()
-                .put("osmreader.osm", "input/NewYork.osm")
-                .put("graph.location", "output/graph-cache")
-                .put("prepare.ch.weightings", "no")
-                .put("graph.flag_encoders", "car|turn_costs=true");
-
-        Ferrovia ferrovia = new Ferrovia(graphHopperArgs);
+        final Ferrovia ferrovia = Ferrovia.Builder.newInstance("input/NewYork.osm", "output/graph-cache")
+                .setFlagEncoders("car|turn_costs=true")
+                .setCHWeightings("no")
+                .build();
+        final List<Point> points = new ArrayList();
+        points.add(new Point(40.752279, -73.993505));
+        points.add(new Point(40.754092, -73.978377));
+        final PathRequest pathRequest = PathRequest.Builder.newInstance(points)
+                .build();
+        try {
+            final Path path = ferrovia.path(pathRequest);
+            System.out.println(path);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
     }
 }
