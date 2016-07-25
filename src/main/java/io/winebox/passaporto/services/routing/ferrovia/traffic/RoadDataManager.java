@@ -45,7 +45,7 @@ public class RoadDataManager {
         int updates = 0;
         TIntHashSet edgeIds = new TIntHashSet(data.size());
         System.out.println(data.size());
-        for (RoadEntry entry : data) {
+        for (RoadDataEntry entry : data) {
 
             // TODO get more than one point -> our map matching component
             Point point = entry.getPoints().get(entry.getPoints().size() / 2);

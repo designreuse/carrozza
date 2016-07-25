@@ -12,6 +12,5 @@ import java.util.List;
  */
 @AllArgsConstructor(access = AccessLevel.PROTECTED) @ToString
 public final class PathException extends java.lang.Exception {
-    @Getter
-    private List<Throwable> errors;
+    @Getter private List<Throwable> errors;
 }

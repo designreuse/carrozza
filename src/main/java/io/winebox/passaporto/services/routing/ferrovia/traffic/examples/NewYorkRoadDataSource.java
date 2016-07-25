@@ -5,7 +5,7 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import io.winebox.passaporto.services.routing.ferrovia.Point;
 import io.winebox.passaporto.services.routing.ferrovia.traffic.RoadData;
 import io.winebox.passaporto.services.routing.ferrovia.traffic.RoadDataSource;
-import io.winebox.passaporto.services.routing.ferrovia.traffic.RoadEntry;
+import io.winebox.passaporto.services.routing.ferrovia.traffic.RoadDataEntry;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -34,7 +34,7 @@ public class NewYorkRoadDataSource implements RoadDataSource {
             }
 
             if (!points.isEmpty()) {
-                data.add(new RoadEntry((int)speed, points));
+                data.add(new RoadDataEntry((int)speed, points));
             }
         }
         return data;

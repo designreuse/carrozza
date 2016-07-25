@@ -9,8 +9,11 @@ import io.winebox.passaporto.services.routing.ferrovia.path.PathException;
 import io.winebox.passaporto.services.routing.ferrovia.path.PathRequest;
 import io.winebox.passaporto.services.routing.ferrovia.traffic.RoadDataManager;
 import io.winebox.passaporto.services.routing.ferrovia.traffic.RoadDataUpdater;
+import lombok.Getter;
+import lombok.NonNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -19,52 +22,53 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * Created by AJ on 7/24/16.
  */
 public final class Ferrovia {
-
     private final GraphHopper graphHopper;
+    @Getter private String osmFile;
+    @Getter private String graphLocation;
+    @Getter private String flagEncoders;
+    @Getter private String weightings;
+    @Getter private String locale;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
-    private final RoadDataManager roadDataManager;
+//    private final RoadDataManager roadDataManager;
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     public static final class Builder {
-        private String osmFilename = "";
-        private String graphLocationFilename = "";
-        private String flagEncoders = "car";
-        private String chWeightings = "fastest";
-        private List<RoadDataUpdater> roadDataUpdaters = new ArrayList();
+        private String osmFile;
+        private String graphLocation;
+        private String flagEncoders;
+        private String weightings;
+//        private List<RoadDataUpdater> roadDataUpdaters = new ArrayList();
 
-        public Builder setOSMFilename( String osmFilename ) {
-            this.osmFilename = osmFilename;
+        public Builder osmFile( @NonNull String osmFile ) {
+            this.osmFile = osmFile;
             return this;
         }
 
-        public Builder setGraphLocationFilename( String graphLocationFilename ) {
-            this.graphLocationFilename = osmFilename;
+        public Builder graphLocation( @NonNull String graphLocation ) {
+            this.graphLocation = graphLocation;
             return this;
         }
 
-        public Builder setFlagEncoders( String flagEncoders ) {
+        public Builder flagEncoders( @NonNull String flagEncoders ) {
             this.flagEncoders = flagEncoders;
             return this;
         }
 
-        public Builder setCHWeightings( String chWeightings ) {
-            this.chWeightings = chWeightings;
+        public Builder weightings( @NonNull String weightings ) {
+            this.weightings = weightings;
             return this;
         }
 
-        public Builder addRoadDataUpdater( RoadDataUpdater updater ) {
-            this.roadDataUpdaters.add(updater);
-            return this;
-        }
+//        public Builder addRoadDataUpdater( RoadDataUpdater updater ) {
+//            this.roadDataUpdaters.add(updater);
+//            return this;
+//        }
 
         public Ferrovia build() {
-            return new Ferrovia(osmFilename, graphLocationFilename, flagEncoders, chWeightings, roadDataUpdaters);
-        }
-
-        public static Builder newInstance( String osmFilename, String graphLocationFilename ) {
-            final Builder builder = new Builder();
-            builder.osmFilename = osmFilename;
-            builder.graphLocationFilename = graphLocationFilename;
-            return builder;
+            return new Ferrovia(osmFile, graphLocation, flagEncoders, weightings/*, roadDataUpdaters*/);
         }
     }
 
@@ -72,15 +76,14 @@ public final class Ferrovia {
         return Path.doWork(graphHopper, pathRequest);
     }
 
-    private Ferrovia( String osmFilename, String graphLocationFilename, String flagEncoders, String chWeightings, List<RoadDataUpdater> roadDataUpdaters ) {
+    private Ferrovia( String osmFile, String graphLocation, String flagEncoders, String weightings/*s, List<RoadDataUpdater> roadDataUpdaters */) {
         final CmdArgs args = new CmdArgs()
-                .put("osmreader.osm", osmFilename)
-                .put("graph.location", graphLocationFilename)
+                .put("osmreader.osm", osmFile)
+                .put("graph.location", graphLocation)
                 .put("graph.flag_encoders", flagEncoders)
-                .put("prepare.ch.weightings", chWeightings);
+                .put("prepare.ch.weightings", weightings);
 
         this.graphHopper = new GraphHopper() {
-
             @Override
             public GHResponse route(GHRequest request) {
                 lock.readLock().lock();
@@ -90,13 +93,12 @@ public final class Ferrovia {
                     lock.readLock().unlock();
                 }
             }
-
         }
                 .init(args)
                 .forServer()
                 .importOrLoad();
 
-        this.roadDataManager = new RoadDataManager(graphHopper, lock.writeLock(), roadDataUpdaters);
-        this.roadDataManager.start();
+//        this.roadDataManager = new RoadDataManager(graphHopper, lock.writeLock(), roadDataUpdaters);
+//        this.roadDataManager.start();
     }
 }

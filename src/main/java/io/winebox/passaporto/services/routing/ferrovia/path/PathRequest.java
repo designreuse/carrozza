@@ -4,6 +4,7 @@ import io.winebox.passaporto.services.routing.ferrovia.Point;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -21,6 +22,7 @@ public final class PathRequest {
         return new Builder();
     }
 
+    @ToString
     public static final class Builder {
         @Getter(value = AccessLevel.PRIVATE, lazy = true) private final Collection<Point> points = new ArrayList();
         private boolean getEdges = false;

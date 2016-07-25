@@ -12,9 +12,11 @@ import java.util.List;
  */
 public final class App {
     public static final void main( String[] args ) throws Exception {
-        final Ferrovia ferrovia = Ferrovia.Builder.newInstance("input/NewYork.osm", "output/graph-cache")
-                .setFlagEncoders("car|turn_costs=true")
-                .setCHWeightings("no")
+        final Ferrovia ferrovia = Ferrovia.builder()
+                .osmFile("input/NewYork.osm")
+                .graphLocation("output/graph-cache")
+                .flagEncoders("car|turn_costs=true")
+                .weightings("no")
 //                .addRoadDataUpdater(RoadDataUpdater.Builder.newInstance(new NewYorkRoadDataSource()).setRefreshRate(30).build())
                 .build();
 //
@@ -25,9 +27,6 @@ public final class App {
         points.add(new Point(40.754092, -73.978377));
         final PathRequest pathRequest = PathRequest.builder()
                 .points(points)
-                .getEdges(true)
-                .calculatePoints(true)
-                .translateInstructions("es")
                 .build();
         try {
             final Path path = ferrovia.path(pathRequest);

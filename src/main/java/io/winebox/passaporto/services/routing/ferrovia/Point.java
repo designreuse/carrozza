@@ -9,12 +9,8 @@ import lombok.Getter;
  */
 @AllArgsConstructor
 public final class Point {
-    @Getter
-    private final double latitude;
-
-    @Getter
-    private final double longitude;
-
+    @Getter private final double latitude;
+    @Getter private final double longitude;
     public GHPoint toGHPoint() {
         return new GHPoint(latitude, longitude);
     }
