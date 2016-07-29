@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: jsprit:jsprit-core:1.6.3-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/jsprit/jsprit-core/1.6.3-SNAPSHOT/jsprit-core-1.6.3-20160718.121321-18.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/jsprit/jsprit-core/1.6.3-SNAPSHOT/jsprit-core-1.6.3-20160718.121321-18-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/jsprit/jsprit-core/1.6.3-SNAPSHOT/jsprit-core-1.6.3-20160718.121321-18-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

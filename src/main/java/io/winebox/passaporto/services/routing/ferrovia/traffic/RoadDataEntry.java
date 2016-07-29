@@ -1,6 +1,6 @@
 package io.winebox.passaporto.services.routing.ferrovia.traffic;
 
-import io.winebox.passaporto.services.routing.ferrovia.Point;
+import io.winebox.passaporto.services.routing.ferrovia.util.Point;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;

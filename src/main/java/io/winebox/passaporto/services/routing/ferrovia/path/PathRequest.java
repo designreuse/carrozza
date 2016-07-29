@@ -1,10 +1,9 @@
 package io.winebox.passaporto.services.routing.ferrovia.path;
 
-import io.winebox.passaporto.services.routing.ferrovia.Point;
+import io.winebox.passaporto.services.routing.ferrovia.util.Point;
 import lombok.*;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -28,7 +27,7 @@ public final class PathRequest {
         private boolean getEdges = false;
         private boolean calculatePoints = false;
         private boolean translateInstructions = false;
-        private String locale = null;
+        private String locale;
 
         public Builder point( @NonNull Point point ) {
             this.points().add(point);
@@ -57,7 +56,7 @@ public final class PathRequest {
         }
 
         public PathRequest build() {
-            return new PathRequest(this.points(), this.getEdges, this.calculatePoints, this.translateInstructions, this.locale);
+            return new PathRequest(this.points(), getEdges, calculatePoints, translateInstructions, locale);
         }
     }
 }
