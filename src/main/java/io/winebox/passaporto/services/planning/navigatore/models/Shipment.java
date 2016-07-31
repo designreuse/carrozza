@@ -1,12 +1,16 @@
 package io.winebox.passaporto.services.planning.navigatore.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.graphhopper.jsprit.core.problem.Location;
 
 /**
  * Created by AJ on 7/28/16.
  */
 public final class Shipment extends Job {
+    @JsonProperty("pickup")
     private final Stop pickup;
+
+    @JsonProperty("delivery")
     private final Stop delivery;
 
     public Stop pickup() {
@@ -24,7 +28,7 @@ public final class Shipment extends Job {
     public static final class Builder {
         private String id;
         private String name;
-        private Priority priority;
+        private Integer priority;
         private Stop pickup;
         private Stop delivery;
 
@@ -38,7 +42,7 @@ public final class Shipment extends Job {
             return this;
         }
 
-        public Builder priority( Priority priority ) {
+        public Builder priority( int priority ) {
             this.priority = priority;
             return this;
         }
@@ -65,18 +69,14 @@ public final class Shipment extends Job {
                 .setDeliveryLocation(Location.Builder.newInstance().setCoordinate(delivery().coordinate().toJsprit()).build());
         if (name() != null) serviceBuilder.setName(name());
         if (priority() != null) {
-            switch (priority()) {
-                case HIGH: serviceBuilder.setPriority(1); break;
-                case MEDIUM: serviceBuilder.setPriority(2); break;
-                case LOW: serviceBuilder.setPriority(3); break;
-            }
+            serviceBuilder.setPriority(priority());
         }
         if (pickup().timeWindows() != null && !pickup().timeWindows().isEmpty()) pickup().timeWindows().forEach((timeWindow) -> serviceBuilder.addPickupTimeWindow(timeWindow.toJsprit()));
         if (delivery().timeWindows() != null && !delivery().timeWindows().isEmpty()) delivery().timeWindows().forEach((timeWindow) -> serviceBuilder.addDeliveryTimeWindow(timeWindow.toJsprit()));
         return serviceBuilder.build();
     }
 
-    Shipment(String id, String name, Priority priority, Stop pickup, Stop delivery ) {
+    public Shipment( @JsonProperty("id") String id, @JsonProperty("name") String name, @JsonProperty("priority") Integer priority, @JsonProperty("pickup") Stop pickup, @JsonProperty("delivery") Stop delivery ) {
         super(id, name, priority);
         this.pickup = pickup;
         this.delivery = delivery;

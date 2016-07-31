@@ -1,12 +1,18 @@
 package io.winebox.passaporto.services.planning.navigatore.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * Created by AJ on 7/28/16.
  */
 public final class Activity {
+    @JsonProperty("id")
     private final String id;
+    @JsonProperty("name")
     private final String name;
+    @JsonProperty("coordinate")
     private final Coordinate coordinate;
+    @JsonProperty("time_window")
     private final TimeWindow timeWindow;
 
     public String id() {
@@ -60,7 +66,7 @@ public final class Activity {
         }
     }
 
-    private Activity( String id, String name, Coordinate coordinate, TimeWindow timeWindow ) {
+    public Activity( @JsonProperty("id") String id, @JsonProperty("name") String name, @JsonProperty("coordinate") Coordinate coordinate, @JsonProperty("time_window") TimeWindow timeWindow ) {
         this.id = id;
         this.name = name;
         this.coordinate = coordinate;

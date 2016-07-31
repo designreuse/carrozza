@@ -153,7 +153,7 @@ public final class Ferrovia {
             Point point = entry.points().get(entry.points().size() / 2);
             QueryResult qr = locationIndex.findClosest(point.latitude(), point.longitude(), EdgeFilter.ALL_EDGES);
             if (!qr.isValid()) {
-                // logger.info("no matching road found for entry " + entry.getId() + " at " + point);
+                 System.out.println("no matching road found for entry at " + point);
                 errors++;
                 continue;
             }
@@ -173,7 +173,7 @@ public final class Ferrovia {
             if (oldSpeed != value) {
                 updates++;
                 // TODO use different speed for the different directions (see e.g. Bike2WeightFlagEncoder)
-//                System.out.println("Speed change at " + entry.getId() + " (" + point + "). Old: " + oldSpeed + ", new:" + value);
+                System.out.println("Speed change at (" + point + "). Old: " + oldSpeed + ", new:" + value);
                 edge.setFlags(carEncoder.setSpeed(edge.getFlags(), value));
             }
         }

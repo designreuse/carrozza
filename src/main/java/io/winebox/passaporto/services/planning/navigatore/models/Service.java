@@ -1,11 +1,13 @@
 package io.winebox.passaporto.services.planning.navigatore.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.graphhopper.jsprit.core.problem.Location;
 
 /**
  * Created by AJ on 7/28/16.
  */
 public final class Service extends Job {
+    @JsonProperty("stop")
     private final Stop stop;
 
     public Stop stop() {
@@ -19,7 +21,7 @@ public final class Service extends Job {
     public static final class Builder {
         private String id;
         private String name;
-        private Priority priority;
+        private Integer priority;
         private Stop stop;
 
         public Builder id( String id ) {
@@ -32,7 +34,7 @@ public final class Service extends Job {
             return this;
         }
 
-        public Builder priority( Priority priority ) {
+        public Builder priority( Integer priority ) {
             this.priority = priority;
             return this;
         }
@@ -53,17 +55,13 @@ public final class Service extends Job {
                 .setLocation(Location.Builder.newInstance().setCoordinate(stop().coordinate().toJsprit()).build());
         if (name() != null) serviceBuilder.setName(name());
         if (priority() != null) {
-            switch (priority()) {
-                case HIGH: serviceBuilder.setPriority(1); break;
-                case MEDIUM: serviceBuilder.setPriority(2); break;
-                case LOW: serviceBuilder.setPriority(3); break;
-            }
+            serviceBuilder.setPriority(priority());
         }
         if (stop().timeWindows() != null && !stop().timeWindows().isEmpty()) stop().timeWindows().forEach((timeWindow) -> serviceBuilder.addTimeWindow(timeWindow.start(), timeWindow.end()));
         return serviceBuilder.build();
     }
 
-    Service( String id, String name, Priority priority, Stop stop ) {
+    public Service( @JsonProperty("id") String id, @JsonProperty("name") String name, @JsonProperty("priority") Integer priority, @JsonProperty("stop") Stop stop ) {
         super(id, name, priority);
         this.stop = stop;
     }

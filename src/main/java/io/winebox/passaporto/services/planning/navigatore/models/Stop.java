@@ -1,5 +1,7 @@
 package io.winebox.passaporto.services.planning.navigatore.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -7,7 +9,10 @@ import java.util.Collection;
  * Created by AJ on 7/27/16.
  */
 public final class Stop {
+    @JsonProperty("coordinate")
     private final Coordinate coordinate;
+
+    @JsonProperty("time_windows")
     private final Collection<TimeWindow> timeWindows;
 
     public Coordinate coordinate() {
@@ -52,7 +57,7 @@ public final class Stop {
         }
     }
 
-    private Stop( Coordinate coordinate, Collection<TimeWindow> timeWindows ) {
+    public Stop( @JsonProperty("coordinate") Coordinate coordinate, @JsonProperty("time_windows") Collection<TimeWindow> timeWindows ) {
         this.coordinate = coordinate;
         this.timeWindows = timeWindows;
     }

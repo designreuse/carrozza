@@ -1,12 +1,15 @@
 package io.winebox.passaporto.services.planning.navigatore.models;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.graphhopper.jsprit.core.problem.Location;
 
 /**
  * Created by AJ on 7/27/16.
  */
 public final class Coordinate {
+    @JsonProperty("latitude")
     private final double latitude;
+    @JsonProperty("longitude")
     private final double longitude;
 
     public double latitude() {
@@ -44,7 +47,7 @@ public final class Coordinate {
         return com.graphhopper.jsprit.core.util.Coordinate.newInstance(latitude(), longitude());
     }
 
-    private Coordinate( double latitude, double longitude ) {
+    public Coordinate( @JsonProperty("latitude") double latitude, @JsonProperty("longitude") double longitude ) {
         this.latitude = latitude;
         this.longitude = longitude;
     }

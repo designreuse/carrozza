@@ -6,11 +6,7 @@ package io.winebox.passaporto.services.planning.navigatore.models;
 public class Job {
     private final String id;
     private final String name;
-    private final Priority priority;
-
-    public static enum Priority {
-        LOW, MEDIUM, HIGH
-    }
+    private final Integer priority;
 
     public String id() {
         return this.id;
@@ -20,11 +16,11 @@ public class Job {
         return this.name;
     }
 
-    public Priority priority() {
+    public Integer priority() {
         return this.priority;
     }
 
-    Job( String id, String name, Priority priority ) {
+    Job( String id, String name, int priority ) {
         this.id = id;
         this.name = name;
         this.priority = priority;

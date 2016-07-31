@@ -1,5 +1,9 @@
 package io.winebox.passaporto.services.routing.ferrovia.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.graphhopper.util.shapes.GHPoint;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -8,22 +12,12 @@ import lombok.NonNull;
 /**
  * Created by AJ on 7/24/16.
  */
-//@AllArgsConstructor
-//public final class Point {
-//    @NonNull @Getter private final double latitude;
-//    @Getter private final double longitude;
-//    public GHPoint toGHPoint() {
-//        return new GHPoint(latitude, longitude);
-//    }
-//
-//    @Override
-//    public String toString() {
-//        return latitude + "," + longitude;
-//    }
-//}
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class Point {
+    @JsonProperty("latitude")
     private final double latitude;
+    @JsonProperty("longitude")
     private final double longitude;
 
     public double latitude() {
@@ -61,7 +55,7 @@ public final class Point {
         }
     }
 
-    private Point( double latitude, double longitude ) {
+    public Point( @JsonProperty("latitude") double latitude, @JsonProperty("longitude") double longitude ) {
         this.latitude = latitude;
         this.longitude = longitude;
     }
