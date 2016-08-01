@@ -7,8 +7,8 @@ import com.graphhopper.jsprit.core.problem.VehicleRoutingProblem;
 import com.graphhopper.jsprit.core.problem.solution.VehicleRoutingProblemSolution;
 import com.graphhopper.jsprit.core.problem.solution.route.VehicleRoute;
 import com.graphhopper.jsprit.core.problem.solution.route.activity.TourActivity;
-import com.graphhopper.jsprit.core.problem.vehicle.Vehicle;
 import com.graphhopper.jsprit.core.problem.vehicle.VehicleImpl;
+import com.graphhopper.jsprit.core.problem.vehicle.VehicleTypeImpl;
 import com.graphhopper.jsprit.core.util.*;
 import com.graphhopper.util.shapes.GHPoint;
 import io.winebox.passaporto.services.planning.navigatore.models.*;
@@ -53,7 +53,7 @@ public final class Navigatore {
                 .setId("origin")
                 .setCoordinate(com.graphhopper.jsprit.core.util.Coordinate.newInstance(0, 0))
                 .build();
-        final Vehicle vehicle = VehicleImpl.Builder
+        final VehicleImpl vehicle = VehicleImpl.Builder
                 .newInstance("no_vehicle")
                 .setStartLocation(dummyLocation)
                 .setReturnToDepot(false)
@@ -125,26 +125,141 @@ public final class Navigatore {
                 .addVehicle(vehicle)
                 .build();
 
-        final Route route = new Route();
         final VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(vehicleRoutingProblem);
         final Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
         final VehicleRoutingProblemSolution solution = Solutions.bestOf(solutions);
+
+        final VehicleRoute route = solution.getRoutes().iterator().next();
+        final List<Activity> activities = new ArrayList();
+
+        for (final TourActivity activity : route.getActivities()) {
+            final String jobId;
+            if (activity instanceof TourActivity.JobActivity) {
+                jobId = ((TourActivity.JobActivity) activity).getJob().getId();
+            } else {
+                jobId = null;
+            }
+            final String activityName;
+            switch (activity.getName()) {
+                case "pickupShipment": activityName = "pickup"; break;
+                case "deliverShipment": activityName = "dropoff"; break;
+                default: activityName = activity.getName(); break;
+            }
+            activities.add(Activity.builder()
+                    .id(jobId)
+                    .name(activityName)
+                    .coordinate(Coordinate.builder()
+                            .latitude(activity.getLocation().getCoordinate().getX())
+                            .longitude(activity.getLocation().getCoordinate().getY())
+                            .build()
+                    )
+                    .timeWindow(TimeWindow.builder()
+                            .start(Math.round(activity.getArrTime()))
+                            .end(Math.round(activity.getEndTime()))
+                            .build()
+                    )
+                    .build()
+            );
+        }
+        Route _route = Route.builder()
+                .vehicleId(null)
+                .activities(activities)
+                .build();
+        return _route;
+    }
+
+    public Plan plan( Collection<Vehicle> vehicles, Collection<VehicleType> vehicleTypes, Collection<Job> jobs ) {
+        final List<Location> locations = new ArrayList();
+
+        final Map<String, VehicleTypeImpl> _vehicleTypes = new HashMap();
+        for (final VehicleType vehicleType : vehicleTypes)  {
+            _vehicleTypes.put(vehicleType.id(), vehicleType.toJsprit());
+        }
+
+        final List<VehicleImpl> _vehicles = new ArrayList();
+        for (final Vehicle vehicle : vehicles) {
+            VehicleTypeImpl vehicleType = _vehicleTypes.get(vehicle.typeId());
+            _vehicles.add(vehicle.toJsprit(vehicleType));
+            locations.add(Location.Builder.newInstance().setCoordinate(vehicle.start().toJsprit()).build());
+        }
+
+        final Collection<com.graphhopper.jsprit.core.problem.job.Job> _jobs = jobs.stream()
+                .map((job) -> job.toJsprit())
+                .collect(Collectors.toList());
+        jobs.forEach((job) -> {
+            if (job instanceof Service) {
+                final Service service = (Service)job;
+                locations.add(Location.Builder.newInstance().setCoordinate(service.stop().coordinate().toJsprit()).build());
+            }
+            if (job instanceof Shipment) {
+                final Shipment shipment = (Shipment)job;
+                locations.add(Location.Builder.newInstance().setCoordinate(shipment.pickup().coordinate().toJsprit()).build());
+                locations.add(Location.Builder.newInstance().setCoordinate(shipment.delivery().coordinate().toJsprit()).build());
+            }
+        });
+
+        final VehicleRoutingTransportCostsMatrix.Builder costsMatrixBuilder = VehicleRoutingTransportCostsMatrix.Builder.newInstance(false);
+        for (final Location fromLocation : locations) {
+            for (final Location toLocation : locations) {
+                if (fromLocation.equals(toLocation)) {
+                    costsMatrixBuilder.addTransportDistance(fromLocation.getId(), toLocation.getId(), 0);
+                    costsMatrixBuilder.addTransportTime(fromLocation.getId(), toLocation.getId(), 0);
+                    continue;
+                }
+                PathRequest pathRequest = PathRequest.builder()
+                        .point(Point.builder()
+                                .latitude(fromLocation.getCoordinate().getX())
+                                .longitude(fromLocation.getCoordinate().getY())
+                                .build()
+                        )
+                        .point(Point.builder()
+                                .latitude(toLocation.getCoordinate().getX())
+                                .longitude(toLocation.getCoordinate().getY())
+                                .build())
+                        .getEdges(false)
+                        .build();
+                Path path;
+                try {
+                    path = ferrovia.path(pathRequest);
+                } catch (Exception e) {
+                    System.out.println(e);
+                    path = null;
+                }
+                costsMatrixBuilder.addTransportDistance(fromLocation.getId(), toLocation.getId(), path.distance());
+                costsMatrixBuilder.addTransportTime(fromLocation.getId(), toLocation.getId(), path.time());
+            }
+        }
+
+        final VehicleRoutingTransportCostsMatrix costsMatrix = costsMatrixBuilder.build();
+        final VehicleRoutingProblem vehicleRoutingProblem = VehicleRoutingProblem.Builder.newInstance()
+                .setFleetSize(VehicleRoutingProblem.FleetSize.FINITE)
+                .setRoutingCost(costsMatrix)
+                .addAllJobs(_jobs)
+                .addAllVehicles(_vehicles)
+                .build();
+
+        final VehicleRoutingAlgorithm algorithm = new SchrimpfFactory().createAlgorithm(vehicleRoutingProblem);
+        final Collection<VehicleRoutingProblemSolution> solutions = algorithm.searchSolutions();
+        final VehicleRoutingProblemSolution solution = Solutions.bestOf(solutions);
+
+        List<Route> routes = new ArrayList();
         for (final VehicleRoute _route : solution.getRoutes()) {
-//            route.add(Activity.builder()
-//                    .id(null)
-//                    .name(_route.getStart().getName())
-//                    .coordinate(Coordinate.builder()
-//                            .latitude(_route.getStart().getLocation().getCoordinate().getX())
-//                            .longitude(_route.getStart().getLocation().getCoordinate().getY())
-//                            .build()
-//                    )
-//                    .timeWindow(TimeWindow.builder()
-//                            .start(-1)
-//                            .end(Math.round(_route.getStart().getEndTime()))
-//                            .build()
-//                    )
-//                    .build()
-//            );
+            List<Activity> activities = new ArrayList();
+            activities.add(Activity.builder()
+                    .id(null)
+                    .name(_route.getStart().getName())
+                    .coordinate(Coordinate.builder()
+                            .latitude(_route.getStart().getLocation().getCoordinate().getX())
+                            .longitude(_route.getStart().getLocation().getCoordinate().getY())
+                            .build()
+                    )
+                    .timeWindow(TimeWindow.builder()
+                            .start(-1)
+                            .end(Math.round(_route.getStart().getEndTime()))
+                            .build()
+                    )
+                    .build()
+            );
             for (final TourActivity activity : _route.getActivities()) {
                 final String jobId;
                 if (activity instanceof TourActivity.JobActivity) {
@@ -158,7 +273,7 @@ public final class Navigatore {
                     case "deliverShipment": activityName = "dropoff"; break;
                     default: activityName = activity.getName(); break;
                 }
-                route.add(Activity.builder()
+                activities.add(Activity.builder()
                         .id(jobId)
                         .name(activityName)
                         .coordinate(Coordinate.builder()
@@ -174,23 +289,33 @@ public final class Navigatore {
                         .build()
                 );
             }
-//            route.add(Activity.builder()
-//                    .id(null)
-//                    .name(_route.getEnd().getName())
-//                    .coordinate(Coordinate.builder()
-//                            .latitude(_route.getEnd().getLocation().getCoordinate().getX())
-//                            .longitude(_route.getEnd().getLocation().getCoordinate().getY())
-//                            .build()
-//                    )
-//                    .timeWindow(TimeWindow.builder()
-//                            .start(Math.round(_route.getEnd().getArrTime()))
-//                            .end(-1)
-//                            .build()
-//                    )
-//                    .build()
-//            );
+            activities.add(Activity.builder()
+                    .id(null)
+                    .name(_route.getEnd().getName())
+                    .coordinate(Coordinate.builder()
+                            .latitude(_route.getEnd().getLocation().getCoordinate().getX())
+                            .longitude(_route.getEnd().getLocation().getCoordinate().getY())
+                            .build()
+                    )
+                    .timeWindow(TimeWindow.builder()
+                            .start(Math.round(_route.getEnd().getArrTime()))
+                            .end(-1)
+                            .build()
+                    )
+                    .build()
+            );
+            routes.add(Route.builder()
+                    .activities(activities)
+                    .vehicleId(_route.getVehicle().getId())
+                    .build()
+            );
         }
-        return route;
+        List<String> unassignedJobs = solution.getUnassignedJobs().stream().map((job) -> job.getId()).collect(Collectors.toList());
+        Plan plan = Plan.builder()
+                .routes(routes)
+                .unassignedJobs(unassignedJobs)
+                .build();
+        return plan;
     }
 
     private Navigatore( Ferrovia ferrovia ) {

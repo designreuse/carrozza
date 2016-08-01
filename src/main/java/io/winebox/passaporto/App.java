@@ -30,8 +30,6 @@ import static spark.Spark.post;
  */
 public final class App {
 
-
-
     @JsonIgnoreProperties(ignoreUnknown = true)
     static class TourPayload {
         @Getter @Setter @JsonProperty("points")
@@ -39,6 +37,24 @@ public final class App {
 
         TourPayload( @JsonProperty("points") List<Point> points ) {
             this.points = points;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    static class RoutePayload {
+        @Getter @Setter @JsonProperty("vehicles")
+        List<Vehicle> vehicles;
+
+        @Getter @Setter @JsonProperty("vehicle_types")
+        List<VehicleType> vehicleTypes;
+
+        @Getter @Setter @JsonProperty("jobs")
+        List<Job> jobs;
+
+        RoutePayload( @JsonProperty("vehicles") List<Vehicle> vehicles, @JsonProperty("vehicle_types") List<VehicleType> vehicleTypes, @JsonProperty("jobs") List<Job> jobs ) {
+            this.vehicles = vehicles;
+            this.vehicleTypes = vehicleTypes;
+            this.jobs = jobs;
         }
     }
 
@@ -76,14 +92,12 @@ public final class App {
                 response.status(400);
                 return "{\"code\": \"BX\"}";
             }
-            System.out.println(payload.points);
             boolean optimize;
             try {
                 optimize = request.queryMap().get("optimize").booleanValue();
             } catch (Exception e) {
                 optimize = false;
             }
-            System.out.println(optimize);
             List<Point> points;
             if (optimize) {
                 List<Job> jobs = payload.points.stream().map((point) -> {
@@ -99,9 +113,10 @@ public final class App {
                             )
                             .build();
                 }).collect(Collectors.toList());
+
                 try {
                     Route route = navigatore.route(jobs);
-                    points = route.stream()
+                    points = route.activities().stream()
                             .map((activity) -> {
                                 Coordinate coordinate = activity.coordinate();
                                 return Point.builder().latitude(coordinate.latitude()).longitude(coordinate.longitude()).build();
@@ -114,7 +129,6 @@ public final class App {
             } else {
                 points = payload.points;
             }
-            System.out.println(points);
             try {
                 PathRequest pathRequest = PathRequest.builder()
                         .points(points)
@@ -129,6 +143,27 @@ public final class App {
                 return "{\"code\": \"UE\"}";
             }
         });
+
+        post("/plan", ((request, response) -> {
+            response.type("application/json");
+            final ObjectMapper mapper = new ObjectMapper();
+            final RoutePayload payload;
+            try {
+                payload = mapper.readValue(request.body(), RoutePayload.class);
+            } catch (Exception e) {
+                System.out.println(e);
+                response.status(400);
+                return "{\"code\": \"BX\"}";
+            }
+            Plan plan;
+            try {
+                plan = navigatore.plan(payload.vehicles(), payload.vehicleTypes(), payload.jobs());
+            } catch (Exception e) {
+                System.out.println(e);
+                return "{\"code\": \"UE\"}";
+            }
+            return mapper.writeValueAsString(plan);
+        }));
 
 //        final Service service1 = Service.builder()
 //                .id("service_1")
