@@ -1,5 +1,6 @@
 package io.winebox.passaporto.services.planning.navigatore.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
@@ -8,6 +9,8 @@ import java.util.Collection;
 /**
  * Created by AJ on 7/27/16.
  */
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public final class Stop {
     @JsonProperty("coordinate")
     private final Coordinate coordinate;

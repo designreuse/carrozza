@@ -22,8 +22,7 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static spark.Spark.get;
-import static spark.Spark.post;
+import static spark.Spark.*;
 
 /**
  * Created by AJ on 7/24/16.
@@ -66,22 +65,70 @@ public final class App {
                 .weightings("no")
                 .build();
 
-//        RoadDataUpdater newYorkUpdater = new RoadDataUpdater(ferrovia, new NewYorkRoadDataSource(), 10);
-//        newYorkUpdater.start();
-//
-//        RoadData data = new RoadData();
-//        List<Point> _points = new ArrayList();
-//        _points.add(Point.builder().latitude(40.753269).longitude(-73.985298).build());
-//        data.add(new RoadDataEntry(0, _points));
-//
-//        ferrovia.feed(data);
-//        TimeUnit.SECONDS.sleep(4);
+        RoadDataUpdater newYorkUpdater = new RoadDataUpdater(ferrovia, new NewYorkRoadDataSource(), 10);
+        newYorkUpdater.start();
+
+        RoadData data = new RoadData();
+        List<Point> _points = new ArrayList();
+        _points.add(Point.builder().latitude(40.753269).longitude(-73.985298).build());
+        data.add(new RoadDataEntry(0, _points));
+
+        ferrovia.feed(data);
+        TimeUnit.SECONDS.sleep(4);
 
         final Navigatore navigatore = Navigatore.builder()
                 .ferrovia(ferrovia)
                 .build();
 
+        options("/*", (request, response) -> {
+
+            String accessControlRequestHeaders = request.headers("Access-Control-Request-Headers");
+            if (accessControlRequestHeaders != null) {
+                response.header("Access-Control-Allow-Headers", accessControlRequestHeaders);
+            }
+
+            String accessControlRequestMethod = request.headers("Access-Control-Request-Method");
+            if (accessControlRequestMethod != null) {
+                response.header("Access-Control-Allow-Methods", accessControlRequestMethod);
+            }
+
+            return "OK";
+        });
+
+        before((request, response) -> {
+            response.header("Access-Control-Allow-Origin", "*");
+            response.header("Access-Control-Request-Method", "POST");
+            response.header("Access-Control-Allow-Headers", "*");
+            // Note: this may or may not be necessary in your particular application
+            response.type("application/json");
+        });
+
+        post("/traffic", (request, response) -> {
+            response.type("application/json");
+            final ObjectMapper mapper = new ObjectMapper();
+            final Coordinate coordinate;
+            try {
+                coordinate = mapper.readValue(request.body(), Coordinate.class);
+            } catch (Exception e) {
+                System.out.println(e);
+                response.status(400);
+                return "{\"code\": \"BX\"}";
+            }
+            try {
+                RoadData trafficData = new RoadData();
+                List<Point> trafficPoints = new ArrayList();
+                trafficPoints.add(Point.builder().latitude(coordinate.latitude()).longitude(coordinate.longitude()).build());
+                trafficData.add(new RoadDataEntry(0, trafficPoints));
+
+                ferrovia.feed(trafficData);
+                return "";
+            } catch (Exception e) {
+                return "{\"code\": \"UE\"}";
+            }
+        });
+
         post("/tour", (request, response) -> {
+            System.out.println(request.body());
             response.type("application/json");
             final ObjectMapper mapper = new ObjectMapper();
             final TourPayload payload;
